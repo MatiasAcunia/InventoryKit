@@ -10,13 +10,15 @@ class SQLiteStorage:
         self.conn.execute(
                     """CREATE TABLE IF NOT EXISTS products (
                     id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL);""")
+                    name TEXT NOT NULL,
+                    active INT DEFAULT 1 CHECK(active IN (0, 1));""")
         self.conn.execute(
                     """CREATE TABLE IF NOT EXISTS events (
                     id INTEGER PRIMARY KEY,
                     product_id TEXT NOT NULL REFERENCES products(id),
                     type TEXT NOT NULL CHECK (type IN ('IN', 'OUT')),
-                    quantity INTEGER NOT NULL CHECK (quantity > 0));""")
+                    quantity INTEGER NOT NULL CHECK (quantity > 0)
+                    timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);""")
         
     def close(self):
         self.conn.close()
@@ -60,5 +62,17 @@ class SQLiteStorage:
                                 WHERE product_id = ?""", (product_id,))
         resultado = cursor.fetchone()
         return resultado[0]
-        
-        
+
+    def _get_product(self, product_id: str) -> tuple[str, str] | None:
+        raise NotImplementedError
+
+    def _list_products(self) -> list[tuple[str, str]]:
+        raise NotImplementedError
+
+    def _get_history(self, product_id: str) -> list[tuple[int, str, str, int, str]]:
+        raise NotImplementedError
+
+    def _deactivate_product(self, product_id: str) -> None:
+        raise NotImplementedError
+            
+            
