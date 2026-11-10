@@ -23,10 +23,10 @@ class Inventory:
          return quantity
     
     def _require_product(self, product_id: str) -> None:
-        resultado = self._storage._product_exists(product_id)
-        if resultado is False:
+        resultado = self._storage._get_product(product_id)
+        if resultado is None:
             raise ProductNotFoundError(f"El producto de id: {product_id} no existe")
-        
+
     def add(self, id: str, name: str) -> None:
         raise NotImplementedError
 

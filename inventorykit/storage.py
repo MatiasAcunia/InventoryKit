@@ -59,20 +59,52 @@ class SQLiteStorage:
                                 ELSE -quantity
                                 END), 0)
                                 FROM events
-                                WHERE product_id = ?""", (product_id,))
+                                WHERE product_id = ?);""", (product_id,))
         resultado = cursor.fetchone()
         return resultado[0]
 
     def _get_product(self, product_id: str) -> tuple[str, str] | None:
-        raise NotImplementedError
+        cursor = self.conn.execute("""SELECT id, name
+                                    FROM products
+                                    WHERE id = ?
+                                    AND active = 1;""", (product_id,))
+        resultado = cursor.fetchone()
+        return resultado
 
     def _list_products(self) -> list[tuple[str, str]]:
-        raise NotImplementedError
+        cursor = self.conn.execute("""SELECT id, name
+                                    FROM products
+                                    WHERE active = 1
+                                    ORDER BY id;""")
+        resultado = cursor.fetchall()
+        return resultado
 
     def _get_history(self, product_id: str) -> list[tuple[int, str, str, int, str]]:
-        raise NotImplementedError
+        cursor = self.conn.execute("""SELECT id, product_id, type, quantity, timestamp
+                                    FROM events
+                                    WHERE id = ?
+                                    ORDER BY id;""", (product_id,))
+        resultado = cursor.fetchall()
+        return resultado
 
-    def _deactivate_product(self, product_id: str) -> None:
-        raise NotImplementedError
+    def _deactivate_product(self, product_id: str) -> int:
+        cursor = self.conn.execute("""UPDATE products
+                                    SET active = 0
+                                    WHERE id = ?
+                                    AND active = 1;""", 
+                                    (product_id,))
+        return cursor.rowcount()
+
+
+    def _activate_product(self, product_id: str) -> int:
+        cursor = self.conn.execute("""UPDATE products
+                                    SET active = 1
+                                    WHERE id = ?
+                                    AND active = 0;""", 
+                                    (product_id,))
+        return cursor.rowcount()
+            
+        
+
             
             
