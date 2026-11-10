@@ -13,17 +13,22 @@ class SQLiteStorage:
                     """CREATE TABLE IF NOT EXISTS products (
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
-                    active INT DEFAULT 1 CHECK(active IN (0, 1)),
+                    active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0, 1)),
                     category TEXT,
                     description TEXT,
-                    attributes TEXT;""")
+                    attributes TEXT NOT NULL DEFAULT '{}')""")
         self.conn.execute(
                     """CREATE TABLE IF NOT EXISTS events (
                     id INTEGER PRIMARY KEY,
                     product_id TEXT NOT NULL REFERENCES products(id),
-                    type TEXT NOT NULL CHECK (type IN ('IN', 'OUT')),
-                    quantity INTEGER NOT NULL CHECK (quantity > 0)
-                    timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);""")
+                    type TEXT NOT NULL CHECK (type IN ('PRODUCT_CREATED','PRODUCT_DELETED','STOCK_RECEIVED','STOCK_REMOVED')),
+                    quantity INTEGER NOT NULL,
+                    timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    CHECK( type IN  ('PRODUCT_CREATED','PRODUCT_DELETED') AND quantity = 0
+                    OR
+                    (type IN ('STOCK_RECEIVED', 'STOCK_REMOVED') AND quantity > 0)))""")
+        self.conn.execute(
+            """CREATE INDEX IF NOT EXISTS idx_events_product ON events(product_id, id)""")
         
     def close(self):
         self.conn.close()
@@ -39,7 +44,7 @@ class SQLiteStorage:
             return True
 
     def _insert_product(self, product_id: str, name: str, category: str | None = None, description: str | None = None, attributes: dict[str, Any] | None = None) -> None:
-        attributes_json = json.dumps(attributes) if attributes is not None else None
+        attributes_json = json.dumps(attributes if attributes is not None else {})
         self.conn.execute("""
                     INSERT INTO products (id, name, category, description, attributes)
                     VALUES (?, ?, ?, ?, ?)
@@ -62,12 +67,13 @@ class SQLiteStorage:
         self.conn.rollback()
 
     def _calculate_stock(self, product_id: str) -> int:
-        cursor = self.conn.execute ("""SELECT COALESCE(SUM(CASE
-                                WHEN type = 'IN' THEN quantity
-                                ELSE -quantity
+        cursor = self.conn.execute ("""SELECT COALESCE(SUM(CASE type
+                                WHEN 'STOCK_RECEIVED' THEN quantity
+                                WHEN 'STOCK_REMOVED' THEN -quantity
+                                ELSE 0
                                 END), 0)
                                 FROM events
-                                WHERE product_id = ?);""", (product_id,))
+                                WHERE product_id = ?""", (product_id,))
         resultado = cursor.fetchone()
         return resultado[0]
 
@@ -90,7 +96,7 @@ class SQLiteStorage:
     def _get_history(self, product_id: str) -> list[tuple[int, str, str, int, str]]:
         cursor = self.conn.execute("""SELECT id, product_id, type, quantity, timestamp
                                     FROM events
-                                    WHERE id = ?
+                                    WHERE product_id = ?
                                     ORDER BY id;""", (product_id,))
         resultado = cursor.fetchall()
         return resultado
@@ -101,7 +107,7 @@ class SQLiteStorage:
                                     WHERE id = ?
                                     AND active = 1;""", 
                                     (product_id,))
-        return cursor.rowcount()
+        return cursor.rowcount
 
 
     def _activate_product(self, product_id: str) -> int:
@@ -110,7 +116,7 @@ class SQLiteStorage:
                                     WHERE id = ?
                                     AND active = 0;""", 
                                     (product_id,))
-        return cursor.rowcount()
+        return cursor.rowcount
             
         
 

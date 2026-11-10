@@ -42,7 +42,7 @@ class InventoryEvent:
 
     def __repr__(self):
         return (f"InventoryEvent(id={self.id!r}, product_id={self.product_id!r}, "
-                f"type={self.type!r}, quantity={self.self.quantity!r}, timestamp={self.timestamp!r})")
+                f"type={self.type!r}, quantity={self.quantity!r}, timestamp={self.timestamp!r})")
 
     def __eq__(self, other):
         if not isinstance(other, InventoryEvent):
