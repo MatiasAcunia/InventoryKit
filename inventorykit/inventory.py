@@ -51,3 +51,6 @@ class Inventory:
 
     def history(self, id: str) -> list[InventoryEvent]:
         raise NotImplementedError
+
+    def close(self) -> None:
+        raise NotImplementedError
