@@ -1,5 +1,6 @@
 from .storage import SQLiteStorage
 from .exceptions import ProductNotFoundError
+from .models import Product, InventoryEvent
 
 class Inventory:
     def __init__(self, path = ":memory:"):
@@ -33,11 +34,20 @@ class Inventory:
     def receive(self, id: str, quantity: int) -> None:
         raise NotImplementedError
 
-    def stock(self, id: str) -> int:
-        raise NotImplementedError
-
     def remove(self, id: str, quantity: int) -> None:
         raise NotImplementedError
 
-    def close(self) -> None:
+    def stock(self, id: str) -> int:
+        raise NotImplementedError
+
+    def get(self, id: str) -> Product:
+        raise NotImplementedError
+
+    def list_products(self) -> list[Product]:
+        raise NotImplementedError
+
+    def delete(self, id: str) -> None:
+        raise NotImplementedError
+
+    def history(self, id: str) -> list[InventoryEvent]:
         raise NotImplementedError
