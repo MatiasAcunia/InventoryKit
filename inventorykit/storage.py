@@ -1,4 +1,6 @@
 import sqlite3
+import json
+from typing import Any
 
 class SQLiteStorage:
     def __init__(self, path= ":memory:"):
@@ -11,7 +13,10 @@ class SQLiteStorage:
                     """CREATE TABLE IF NOT EXISTS products (
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
-                    active INT DEFAULT 1 CHECK(active IN (0, 1));""")
+                    active INT DEFAULT 1 CHECK(active IN (0, 1)),
+                    category TEXT,
+                    description TEXT,
+                    attributes TEXT;""")
         self.conn.execute(
                     """CREATE TABLE IF NOT EXISTS events (
                     id INTEGER PRIMARY KEY,
@@ -33,10 +38,13 @@ class SQLiteStorage:
         else:
             return True
 
-    def _insert_product(self, product_id: str, name: str) -> None:
-        self.conn.execute(
-                """INSERT INTO products (id, name) VALUES (?, ?)""",
-                (product_id, name))
+    def _insert_product(self, product_id: str, name: str, category: str | None = None, description: str | None = None, attributes: dict[str, Any] | None = None) -> None:
+        attributes_json = json.dumps(attributes) if attributes is not None else None
+        self.conn.execute("""
+                    INSERT INTO products (id, name, category, description, attributes)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,
+                    (product_id, name, category, description, attributes_json))
         
 
     def _insert_event(self, product_id: str, event_type: str, quantity: int) -> None:
@@ -63,16 +71,16 @@ class SQLiteStorage:
         resultado = cursor.fetchone()
         return resultado[0]
 
-    def _get_product(self, product_id: str) -> tuple[str, str] | None:
-        cursor = self.conn.execute("""SELECT id, name
+    def _get_product(self, product_id: str) -> tuple[str, str, str | None, str | None, str | None] | None:
+        cursor = self.conn.execute("""SELECT id, name, category, description, attributes
                                     FROM products
                                     WHERE id = ?
                                     AND active = 1;""", (product_id,))
         resultado = cursor.fetchone()
         return resultado
 
-    def _list_products(self) -> list[tuple[str, str]]:
-        cursor = self.conn.execute("""SELECT id, name
+    def _list_products(self) -> list[tuple[str, str, str | None, str | None, str | None]]:
+        cursor = self.conn.execute("""SELECT id, name, category, description, attributes
                                     FROM products
                                     WHERE active = 1
                                     ORDER BY id;""")
