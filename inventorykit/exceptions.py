@@ -11,3 +11,7 @@ class ProductNotFoundError(LookupError):
 #Se lanza en remove() si se intenta sacar más unidades de las que hay
 class InsufficientStockError(ValueError):
     pass
+
+class StockLeftError(ValueError):
+    pass
+

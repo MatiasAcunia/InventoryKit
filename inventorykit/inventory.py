@@ -1,5 +1,5 @@
 from .storage import SQLiteStorage
-from .exceptions import ProductNotFoundError, ProductAlreadyExistsError
+from .exceptions import ProductNotFoundError, ProductAlreadyExistsError, StockLeftError
 from .models import Product, InventoryEvent, EventType
 import json
 
@@ -86,7 +86,11 @@ class Inventory:
         raise NotImplementedError
 
     def stock(self, id: str) -> int:
-        raise NotImplementedError
+        id = self._validate_text(id, "id")
+        res = self._storage._get_product(id)
+        if res is None:
+            raise ProductNotFoundError("El producto no existe en la base de datos.")  
+        return self._storage._calculate_stock(id)
 
     def get(self, id: str) -> Product:
         id = self._validate_text(id, "id")
@@ -105,10 +109,41 @@ class Inventory:
         return products
 
     def delete(self, id: str) -> None:
-        raise NotImplementedError
+        id = self._validate_text(id, "id")
+        res = self._storage._get_product(id)
+        if res is None:
+            raise ProductNotFoundError("El producto no existe en la base de datos o ya esta activo.")  
+        stock = self.stock(id)
+        if stock > 0:
+            raise StockLeftError("Todavia hay stock en el producto")
+        self._storage._begin_write()
+        try:
+            self._storage._deactivate_product(id)
+        except BaseException:
+            self._storage._rollback()
+            raise
+
+    def reactivate(self, id: str) -> None:
+        id = self._validate_text(id, "id")
+        res = self._storage._get_product(id)
+        if res is None:
+            raise ProductNotFoundError("El producto no existe en la base de datos o ya esta activo.")  
+        stock = self.stock(id)
+        if stock > 0:
+            raise StockLeftError("Todavia hay stock en el producto")
+        self._storage._begin_write()
+        try:
+            self._storage._activate_product(id)
+        except BaseException:
+            self._storage._rollback()
+            raise                        
+
+        
 
     def history(self, id: str) -> list[InventoryEvent]:
-        raise NotImplementedError
+        res = self._storage._get_history(id)
+
 
     def close(self) -> None:
-        raise NotImplementedError
+        if hasattr(self, "storage") and self.storage:
+            self.storage.close()
