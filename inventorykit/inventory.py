@@ -80,7 +80,19 @@ class Inventory:
         return Product(id, name, category, description, dict(attributes))         
 
     def receive(self, id: str, quantity: int) -> None:
-        raise NotImplementedError
+        id = self._validate_text(id, "id")
+        quantity = self._validate_quantity(quantity)
+        res = self._storage._product_exists(id)
+        if res is False:
+            raise ProductNotFoundError("El producto no existe en la base de datos o no esta activo.")  
+        self._storage._begin_write()
+
+        try:
+            self._storage._insert_event(id, EventType.STOCK_RECEIVED, quantity)
+        except BaseException:
+            self._storage._rollback()
+            raise
+
 
     def remove(self, id: str, quantity: int) -> None:
         raise NotImplementedError
@@ -112,13 +124,14 @@ class Inventory:
         id = self._validate_text(id, "id")
         res = self._storage._get_product(id)
         if res is None:
-            raise ProductNotFoundError("El producto no existe en la base de datos o ya esta activo.")  
+            raise ProductNotFoundError("El producto no existe en la base de datos o no esta activo.")  
         stock = self.stock(id)
         if stock > 0:
             raise StockLeftError("Todavia hay stock en el producto")
         self._storage._begin_write()
         try:
             self._storage._deactivate_product(id)
+            self._storage._insert_event(id, EventType.PRODUCT_DELETED, 0)
         except BaseException:
             self._storage._rollback()
             raise
@@ -134,6 +147,7 @@ class Inventory:
         self._storage._begin_write()
         try:
             self._storage._activate_product(id)
+            self._storage._insert_event(id, EventType.PRODUCT_REACTIVATED, 0)
         except BaseException:
             self._storage._rollback()
             raise                        
@@ -141,7 +155,16 @@ class Inventory:
         
 
     def history(self, id: str) -> list[InventoryEvent]:
+        id = self._validate_text(id, "id")
         res = self._storage._get_history(id)
+        if res is None:
+                    raise ProductNotFoundError("No hay historial")  
+        list = []
+        for item in res:
+            itemie = InventoryEvent(*item)
+            list.append(itemie)
+        return res
+
 
 
     def close(self) -> None:
