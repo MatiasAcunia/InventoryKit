@@ -141,21 +141,21 @@ class Inventory:
             products.append(self._row_to_product(row))
         return products
 
-    def delete(self, id: str) -> None:
+    def delete(self, id: str) -> InventoryEvent:
         id = self._validate_text(id, "id")
-        res = self._storage._get_product(id)
-        if res is None:
-            raise ProductNotFoundError("El producto no existe en la base de datos o no esta activo.")  
-        stock = self.stock(id)
-        if stock > 0:
-            raise StockLeftError("Todavia hay stock en el producto")
         self._storage._begin_write()
+        res = self._storage._get_product(id)
         try:
+            self._require_product(id)
+            if self._storage._calculate_stock(id) > 0:
+                        raise StockLeftError(f"El producto {id!r} todavía tiene stock")
             self._storage._deactivate_product(id)
-            self._storage._insert_event(id, EventType.PRODUCT_DELETED, 0)
+            event_id = self._storage._insert_event(id, EventType.PRODUCT_DELETED, 0)
+            self._storage._commit()
         except BaseException:
             self._storage._rollback()
             raise
+        return self._row_to_event(self._storage._get_event(event_id))
 
     def reactivate(self, id: str) -> None:
         id = self._validate_text(id, "id")
@@ -173,21 +173,21 @@ class Inventory:
             self._storage._rollback()
             raise                        
 
-        
-
     def history(self, id: str) -> list[InventoryEvent]:
         id = self._validate_text(id, "id")
-        res = self._storage._get_history(id)
-        if res is None:
-                    raise ProductNotFoundError("No hay historial")  
-        list = []
-        for item in res:
-            itemie = InventoryEvent(*item)
-            list.append(itemie)
-        return res
-
-
+        if not self._storage._product_exists(id):
+                    raise ProductNotFoundError(f"El producto de id: {id} nunca existió")  
+        rows = self._storage._get_history(id)
+        events = []
+        for row in rows:
+            events.append(self._row_to_event(row))
+        return events
 
     def close(self) -> None:
-        if hasattr(self, "storage") and self.storage:
-            self.storage.close()
+        self._storage.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
