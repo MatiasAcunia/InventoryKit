@@ -52,10 +52,17 @@ class SQLiteStorage:
                     (product_id, name, category, description, attributes_json))
         
 
-    def _insert_event(self, product_id: str, event_type: str, quantity: int) -> None:
-        self.conn.execute(
+    def _insert_event(self, product_id: str, event_type: str, quantity: int) -> int:
+        cursor = self.conn.execute(
                         """INSERT INTO events (product_id, type, quantity) VALUES (?, ?, ?)""",
                         (product_id, event_type, quantity))
+        return cursor.lastrowid #El id que la base le dio a la fila insertada
+
+    def _get_event(self, event_id: int) -> tuple[int, str, str, int, str] | None:
+        cursor = self.conn.execute("""SELECT id, product_id, type, quantity, timestamp
+                                    FROM events
+                                    WHERE id = ?""", (event_id,))
+        return cursor.fetchone()
 
     def _begin_write(self) -> None:
         self.conn.execute("BEGIN IMMEDIATE")

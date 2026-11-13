@@ -1,5 +1,5 @@
 from .storage import SQLiteStorage
-from .exceptions import ProductNotFoundError, ProductAlreadyExistsError, StockLeftError
+from .exceptions import ProductNotFoundError, ProductAlreadyExistsError, StockLeftError, InsufficientStockError
 from .models import Product, InventoryEvent, EventType
 import json
 
@@ -58,6 +58,11 @@ class Inventory:
         attributes = json.loads(attributes_json)
         return Product(product_id, name, category, description, attributes)
 
+    #Convierte una tupla de la bd en un InventoryEvent
+    def _row_to_event(self, row: tuple) -> InventoryEvent:
+        event_id, product_id, event_type, quantity, timestamp = row
+        return InventoryEvent(event_id, product_id, event_type, quantity, timestamp)
+
     def add(self, id: str, name: str, *, category:str | None = None, description: str | None = None, attributes: dict | None = None) -> Product:
         #Primero validamos todo, así si algo está mal no afecta a la BD
         id = self._validate_text(id, "id")
@@ -79,23 +84,39 @@ class Inventory:
             raise
         return Product(id, name, category, description, dict(attributes))         
 
-    def receive(self, id: str, quantity: int) -> None:
+    def receive(self, id: str, quantity: int) -> InventoryEvent:
+        #Registra una entrada de mercadería, validando antes de modificar la BD
         id = self._validate_text(id, "id")
         quantity = self._validate_quantity(quantity)
-        res = self._storage._product_exists(id)
-        if res is False:
-            raise ProductNotFoundError("El producto no existe en la base de datos o no esta activo.")  
         self._storage._begin_write()
-
         try:
-            self._storage._insert_event(id, EventType.STOCK_RECEIVED, quantity)
+            self._require_product(id)
+            event_id = self._storage._insert_event(id, EventType.STOCK_RECEIVED, quantity)
+            self._storage._commit()
+        except BaseException:
+                 self._storage._rollback()
+                 raise   
+        return self._row_to_event(self._storage._get_event(event_id))
+
+    def remove(self, id: str, quantity: int) -> InventoryEvent:
+        #Registra una salida de mercadería, validando antes de cambiar la BD
+        id = self._validate_text(id, "id")
+        quantity = self._validate_quantity(quantity)
+        #Hacemos write lock para asegurarnos que no hayan errores
+        self._storage._begin_write()
+        try:
+            self._require_product(id)
+            available = self._storage._calculate_stock(id)
+            #Si se pide quitar más de lo que hay guardado, se rechaza y hace rollback
+            if quantity > available:
+                raise InsufficientStockError(
+                    f"Stock insuficiente para {id!r}: hay {available} y se pidieron {quantity}")
+            event_id = self._storage._insert_event(id, EventType.STOCK_REMOVED, quantity)
+            self._storage._commit()
         except BaseException:
             self._storage._rollback()
             raise
-
-
-    def remove(self, id: str, quantity: int) -> None:
-        raise NotImplementedError
+        return self._row_to_event(self._storage._get_event(event_id))
 
     def stock(self, id: str) -> int:
         id = self._validate_text(id, "id")
