@@ -157,23 +157,7 @@ class Inventory:
             raise
         return self._row_to_event(self._storage._get_event(event_id))
 
-    def reactivate(self, id: str) -> None:
-        id = self._validate_text(id, "id")
-        res = self._storage._product_exists(id)
-        res2 = self._storage._get_product(id)
-        if res is None or res2 is not None:
-            raise ProductNotFoundError("El producto no existe en la base de datos o ya esta activo.")  
-        stock = self.stock(id)
-        if stock > 0:
-            raise StockLeftError("Todavia hay stock en el producto")
-        self._storage._begin_write()
-        try:
-            self._storage._activate_product(id)
-            self._storage._insert_event(id, EventType.PRODUCT_REACTIVATED, 0)
-        except BaseException:
-            self._storage._rollback()
-            raise                        
-
+                   
     def history(self, id: str) -> list[InventoryEvent]:
         id = self._validate_text(id, "id")
         if not self._storage._product_exists(id):

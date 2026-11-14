@@ -117,15 +117,6 @@ class SQLiteStorage:
         return cursor.rowcount
 
 
-    def _activate_product(self, product_id: str) -> int:
-        cursor = self.conn.execute("""UPDATE products
-                                    SET active = 1
-                                    WHERE id = ?
-                                    AND active = 0;""", 
-                                    (product_id,))
-        return cursor.rowcount
-            
-        
 
             
             
