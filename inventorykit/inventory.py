@@ -159,8 +159,9 @@ class Inventory:
 
     def reactivate(self, id: str) -> None:
         id = self._validate_text(id, "id")
-        res = self._storage._get_product(id)
-        if res is None:
+        res = self._storage._product_exists(id)
+        res2 = self._storage._get_product(id)
+        if res is None or res2 is not None:
             raise ProductNotFoundError("El producto no existe en la base de datos o ya esta activo.")  
         stock = self.stock(id)
         if stock > 0:
