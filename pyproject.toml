@@ -1,0 +1,17 @@
+#Es lo que sabe construir la biblioteca
+[build-system]
+requires = ["setuptools>=64"] #Que herramienta construye el paquete
+build-backend = "setuptools.build_meta"
+
+#Nombre con el que se instala (pip install inventorykit) y la versión actual (0.1)
+[project]
+name = "inventorykit"
+version = "0.1.0"
+description = "Biblioteca Python para gestionar inventario con SQLite, sin escribir SQL"
+readme = "README.md"
+requires-python = ">=3.10" #Sintaxis str | None, podemos poner una version mas nueva si queremos
+dependencies = [] #Todos los modulos que usamos vienen con el Python
+
+#Le indica al supertools cual es la carpeta con el codigo
+[tool.setuptools]
+packages = ["inventorykit"]

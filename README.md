@@ -31,13 +31,27 @@ También se contempla la validación de datos, el manejo de errores y el uso de 
 
 ## 3. Tecnologías utilizadas
 
-- Python 3.
+- Python 3.10 
 - SQLite para almacenar los productos y movimientos.
 - `sqlite3` para interactuar con la base de datos.
 - JSON para almacenar atributos adicionales de los productos.
+- `unittest`' para las pruebas automáticas
 - Biblioteca estándar de Python, sin dependencias externas de ejecución.
 
 ## 4. Estructura del proyecto
+
+
+InventoryKit/
+├── inventorykit/        # la biblioteca
+│   ├── __init__.py
+│   ├── inventory.py
+│   ├── models.py
+│   ├── exceptions.py
+│   └── storage.py
+├── tests/               # pruebas automáticas
+├── examples/            # ejemplos de uso
+├── pyproject.toml
+└── README.md
 
 El código está organizado dentro del paquete `inventorykit`:
 
@@ -51,22 +65,19 @@ Separamos la lógica de inventario del acceso a los datos para que cada parte te
 
 ## 5. Instalación y uso
 
-Requisito: tener Python 3 instalado.
+Requisito: tener Python 3.10 o superior instalado.
 
-Para clonar el repositorio:
+Clonar el repositorio e instalar la biblioteca en un entorno virtual
 
 ```bash
 git clone https://github.com/MatiasAcunia/InventoryKit.git
-```
-
-Ingresar a la carpeta del proyecto:
-
-```bash
 cd InventoryKit
+python -m venv .venv
+.venv\Scripts\activate    #Nota: En Linux: source .venv/bin/activate
+pip install -e .
 ```
 
-Actualmente se puede utilizar el paquete directamente desde la carpeta del repositorio. El empaquetado para instalación independiente todavía está pendiente.
-
+Luego se puede importar desde cualquier carpeta, con el entorno activado.
 Ejemplo básico de las operaciones implementadas:
 
 ```python
@@ -103,12 +114,45 @@ Los productos se eliminan de manera lógica: se marcan como inactivos, pero sus 
 
 La biblioteca no incluye interfaz gráfica ni servidor HTTP. Su objetivo es que otras aplicaciones puedan utilizar directamente sus funciones de Python.
 
-## 7. Estado del proyecto
+## 7. Reglas y errores
 
-InventoryKit se encuentra en desarrollo.
+Reglas comunes:
+- El id y el nombre no pueden estar vacíos
+- El id no puede tener espacios al principio o al final (se rechaza, no se corrige)
+- Las cantidades son enteros positivos 
+- Las claves de `attributes` son textos no vacíos y los valores deben poder guardarse como JSON.
 
-Ya se implementó una parte de la estructura, los modelos, las operaciones de almacenamiento y varios métodos públicos.
+| Excepción | Cuándo se lanza |
+| --------- | --------------- |
+| `TypeError` | Tipo de argumento incorrecto (por ejemplo, una cantidad decimal o un booleano) |
+| `ValueError` | Texto vacío, id con espacios sobrantes, cantidad menor o igual a 0, atributos no serializables |
+| `ProductAlreadyExistsError` (es un `ValueError`) | `add` con un id ya usado, incluso por un producto eliminado |
+| `ProductNotFoundError` (es un `LookupError`) | No hay un producto **activo** con ese id. `history` es la excepción: acepta productos eliminados y falla solo si el id nunca existió |
+| `InsufficientStockError` (es un `ValueError`) | `remove` pide más unidades de las disponibles |
+| `StockLeftError` (es un `ValueError`) | `delete` sobre un producto que todavía tiene stock |
 
-Todavía queda completar y revisar las operaciones restantes, integrar correctamente el manejo de transacciones, realizar pruebas y preparar la instalación como biblioteca independiente.
+Si una operación falla, no queda nada guardado a medias: cada operación de escritura es una transacción que se revierte completa ante cualquier error.
 
-El objetivo es terminar una versión pequeña, funcional y reutilizable, manteniendo una implementación sencilla y sin agregar características que no sean necesarias para el alcance del proyecto.
+## 8. Concurrencia y límites
+
+- Varias conexiones o procesos pueden usar el **mismo archivo local**. SQLite permite un solo escritor a la vez, así que las escrituras se ordenan: dos salidas simultáneas nunca consumen las mismas existencias.
+- Si otra conexión mantiene el candado de escritura por más tiempo del que espera (5 segundos por defecto), la operación **no se realiza** y se propaga `sqlite3.OperationalError: database is locked`. No se convierte en un error de negocio; la aplicación puede reintentar.
+- No compartir una misma instancia de `Inventory` entre hilos: cada hilo debe abrir la suya.
+- No se garantiza el funcionamiento sobre carpetas de red (NFS/SMB) ni con muchos escritores simultáneos. Está pensada para aplicaciones pequeñas.
+- Las fechas de los eventos se guardan en **UTC** y se devuelven como texto (`AAAA-MM-DD HH:MM:SS`).
+
+## 9. Pruebas y ejemplos
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+Las pruebas cubren los contratos de las operaciones, la persistencia al cerrar y reabrir, la reversión ante fallos y la concurrencia entre conexiones.
+
+En `examples/` hay un programa que usa la biblioteca como lo haría un proyecto externo:
+
+- `basic_usage.py`: operaciones básicas con un archivo y reapertura.
+
+## 10. Estado del proyecto
+
+Las ocho operaciones están implementadas, con validaciones, transacciones y pruebas automáticas, y la biblioteca se puede instalar con `pip install -e .`.
