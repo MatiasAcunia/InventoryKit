@@ -80,8 +80,14 @@ def opcion_registrar(inv):
     nombre = pedir_texto("Nombre: ")
     categoria = pedir_opcional("Categoría")
     descripcion = pedir_opcional("Descripción")
-    ubicacion = pedir_opcional("Ubicación en el depósito")
-    atributos = {"ubicacion": ubicacion} if ubicacion else {}
+    atributos = {}
+    #Pedimos los atributos del producto
+    while True:
+        clave = pedir_opcional("Nombre del atributo (Enter para terminar)")
+        if clave is None:
+            break
+        valor = pedir_texto(f"Valor de {clave}: ")
+        atributos[clave] = valor
     producto = inv.add(codigo, nombre, category=categoria, description=descripcion, attributes=atributos)
     print(f"Producto registrado: {producto.name} ({producto.id}). Stock inicial: 0")
 
