@@ -7,6 +7,8 @@ class EventType:
     PRODUCT_REACTIVATED = "PRODUCT_REACTIVATED"
     STOCK_RECEIVED = "STOCK_RECEIVED"
     STOCK_REMOVED = "STOCK_REMOVED"
+    STOCK_ADJUSTED_IN = "STOCK_ADJUSTED_IN"
+    STOCK_ADJUSTED_OUT = "STOCK_ADJUSTED_OUT"
 
 class Product:
     def __init__(self, id, name, category = None, description = None, attributes = None):
@@ -33,13 +35,17 @@ class Product:
         return (self.id == other.id and self.name == other.name and self.category == other.category and self.description == other.description 
                 and self.attributes == other.attributes)
 
+    def to_dict(self) -> dict:
+        pass
+
 class InventoryEvent:
-    def __init__(self, id, product_id, type, quantity, timestamp):
+    def __init__(self, id, product_id, type, quantity, timestamp, attributes=None):
         self.id = id
         self.product_id = product_id
         self.type = type
         self.quantity = quantity
         self.timestamp = timestamp
+        self.attributes = {} if attributes is None else attributes
 
     def __repr__(self):
         return (f"InventoryEvent(id={self.id!r}, product_id={self.product_id!r}, "
@@ -50,3 +56,6 @@ class InventoryEvent:
             return NotImplemented
         return (self.id == other.id and self.product_id == other.product_id and self.type == other.type and self.quantity == other.quantity
                 and self.timestamp == other.timestamp)
+
+    def to_dict(self) -> dict:
+        pass

@@ -1,3 +1,4 @@
+from .query import Filter, Projection, Sort
 from .storage import SQLiteStorage
 from .exceptions import ProductNotFoundError, ProductAlreadyExistsError, StockLeftError, InsufficientStockError
 from .models import Product, InventoryEvent, EventType
@@ -176,3 +177,114 @@ class Inventory:
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
+
+    def add_one(self, id: str, name: str, *, category: str | None = None, description: str | None = None, attributes: dict | None = None) -> Product:
+        pass
+
+    def add_many(self, products: list[dict]) -> list[Product]:
+        pass
+
+    def get_one(self, id: str) -> Product:
+        pass
+
+    def get_many(self, ids: list[str]) -> list[Product]:
+        pass
+
+    def delete_one(self, id: str) -> InventoryEvent:
+        pass
+
+    def delete_many(self, ids: list[str]) -> list[InventoryEvent]:
+        pass
+
+    def receive_one(self, id: str, quantity: int, *, attributes: dict | None = None) -> InventoryEvent:
+        pass
+
+    def receive_many(self, movements: list[dict]) -> list[InventoryEvent]:
+        pass
+
+    def remove_one(self, id: str, quantity: int, *, attributes: dict | None = None) -> InventoryEvent:
+        pass
+
+    def remove_many(self, movements: list[dict]) -> list[InventoryEvent]:
+        pass
+
+    def update_one(self, filter: Filter, changes: dict) -> int:
+        pass
+
+    def update_many(self, filter: Filter, changes: dict) -> int:
+        pass
+
+    def stock_at(self, id: str, timestamp: str) -> int:
+        pass
+
+    def adjust_stock(self, id: str, actual_quantity: int) -> InventoryEvent | None:
+        pass
+
+    def set_minimum_stock(self, id: str, quantity: int) -> Product:
+        pass
+
+    def low_stock(self) -> list[dict]:
+        pass
+
+    def find(self, filter: Filter | None = None, projection: Projection | None = None, sort: Sort | None = None, *, limit: int | None = None, skip: int = 0, include_inactive: bool = False) -> list[dict]:
+        pass
+
+    def find_one(self, filter: Filter | None = None, projection: Projection | None = None, sort: Sort | None = None, *, include_inactive: bool = False) -> dict | None:
+        pass
+
+    def find_events(self, filter: Filter | None = None, projection: Projection | None = None, sort: Sort | None = None, *, limit: int | None = None, skip: int = 0) -> list[dict]:
+        pass
+
+    def find_event(self, filter: Filter | None = None, projection: Projection | None = None, sort: Sort | None = None) -> dict | None:
+        pass
+
+    def count_products(self, filter: Filter | None = None, *, include_inactive: bool = False) -> int:
+        pass
+
+    def count_events(self, filter: Filter | None = None) -> int:
+        pass
+
+    def _validate_query(self, filter: Filter | None, projection: Projection | None, sort: Sort | None) -> None:
+        pass
+
+    def _validate_update(self, changes: dict) -> None:
+        pass
+
+    def _validate_pagination(self, limit: int | None, skip: int) -> None:
+        pass
+
+    def _validate_stock_adjustment(self, actual_quantity: int) -> None:
+        pass
+
+    def _add_internal(self, id: str, name: str, category: str | None = None, description: str | None = None, attributes: dict | None = None) -> Product:
+        pass
+
+    def _receive_internal(self, id: str, quantity: int, attributes: dict | None = None) -> InventoryEvent:
+        pass
+
+    def _remove_internal(self, id: str, quantity: int, attributes: dict | None = None) -> InventoryEvent:
+        pass
+
+    def _delete_internal(self, id: str) -> InventoryEvent:
+        pass
+
+    def _update_internal(self, id: str, changes: dict) -> int:
+        pass
+
+    def _adjust_stock_internal(self, id: str, actual_quantity: int) -> InventoryEvent | None:
+        pass
+
+    def _execute_transaction(self, operation, *args, **kwargs):
+        pass
+
+    def _execute_batch(self, operation, items: list) -> list:
+        pass
+
+    def _rows_to_products(self, rows: list) -> list[Product]:
+        pass
+
+    def _rows_to_events(self, rows: list) -> list[InventoryEvent]:
+        pass
+
+    def _rows_to_dicts(self, rows: list) -> list[dict]:
+        pass

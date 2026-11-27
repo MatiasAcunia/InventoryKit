@@ -15,3 +15,17 @@ class InsufficientStockError(ValueError):
 class StockLeftError(ValueError):
     pass
 
+class InvalidFilterError(ValueError):
+    pass
+
+
+class InvalidProjectionError(ValueError):
+    pass
+
+
+class InvalidSortError(ValueError):
+    pass
+
+
+class InsufficientDataError(ValueError):
+    pass

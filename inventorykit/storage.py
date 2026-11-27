@@ -1,3 +1,4 @@
+from .query import Filter, Projection, Sort
 import sqlite3
 import json
 from typing import Any
@@ -116,7 +117,32 @@ class SQLiteStorage:
                                     (product_id,))
         return cursor.rowcount
 
+    def _find_products(self, filter: Filter | None = None, projection: Projection | None = None, sort: Sort | None = None, limit: int | None = None, skip: int = 0, include_inactive: bool = False) -> list[dict]:
+        pass
 
+    def _find_events(self, filter: Filter | None = None, projection: Projection | None = None, sort: Sort | None = None, limit: int | None = None, skip: int = 0) -> list[dict]:
+        pass
 
-            
-            
+    def _count_products(self, filter: Filter | None = None, include_inactive: bool = False) -> int:
+        pass
+
+    def _count_events(self, filter: Filter | None = None) -> int:
+        pass
+
+    def _update_product(self, product_id: str, changes: dict) -> int:
+        pass
+
+    def _update_attributes(self, product_id: str, changes: dict) -> int:
+        pass
+
+    def _get_stock_at(self, product_id: str, timestamp: str) -> int:
+        pass
+
+    def _get_stock_history(self, product_id: str, start: str, end: str) -> list[dict]:
+        pass
+
+    def _execute_query(self, sql: str, parameters: list) -> sqlite3.Cursor:
+        pass
+
+    def _migrate_schema(self) -> None:
+        pass
