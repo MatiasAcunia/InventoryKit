@@ -64,7 +64,7 @@ class Inventory:
         event_id, product_id, event_type, quantity, timestamp = row
         return InventoryEvent(event_id, product_id, event_type, quantity, timestamp)
 
-    def add(self, id: str, name: str, *, category:str | None = None, description: str | None = None, attributes: dict | None = None) -> Product:
+    def add_one(self, id: str, name: str, *, category:str | None = None, description: str | None = None, attributes: dict | None = None) -> Product:
         #Primero validamos todo, así si algo está mal no afecta a la BD
         id = self._validate_text(id, "id")
         name = self._validate_text(name, "name")
@@ -85,7 +85,7 @@ class Inventory:
             raise
         return Product(id, name, category, description, dict(attributes))         
 
-    def receive(self, id: str, quantity: int) -> InventoryEvent:
+    def receive_one(self, id: str, quantity: int) -> InventoryEvent:
         #Registra una entrada de mercadería, validando antes de modificar la BD
         id = self._validate_text(id, "id")
         quantity = self._validate_quantity(quantity)
@@ -99,7 +99,7 @@ class Inventory:
                  raise   
         return self._row_to_event(self._storage._get_event(event_id))
 
-    def remove(self, id: str, quantity: int) -> InventoryEvent:
+    def remove_one(self, id: str, quantity: int) -> InventoryEvent:
         #Registra una salida de mercadería, validando antes de cambiar la BD
         id = self._validate_text(id, "id")
         quantity = self._validate_quantity(quantity)
@@ -126,7 +126,7 @@ class Inventory:
             raise ProductNotFoundError("El producto no existe en la base de datos.")  
         return self._storage._calculate_stock(id)
 
-    def get(self, id: str) -> Product:
+    def get_one(self, id: str) -> Product:
         id = self._validate_text(id, "id")
         #El get solo devuelve productos activos
         row = self._storage._get_product(id)
@@ -134,15 +134,7 @@ class Inventory:
             raise ProductNotFoundError(f"El producto de id: {id} no existe")
         return self._row_to_product(row)
 
-    def list_products(self) -> list[Product]:
-        #Trae todas las filas de la BD ordenadas por id
-        rows = self._storage._list_products()
-        products = []
-        for row in rows:
-            products.append(self._row_to_product(row))
-        return products
-
-    def delete(self, id: str) -> InventoryEvent:
+    def delete_one(self, id: str) -> InventoryEvent:
         id = self._validate_text(id, "id")
         self._storage._begin_write()
         res = self._storage._get_product(id)
@@ -178,31 +170,16 @@ class Inventory:
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
-    def add_one(self, id: str, name: str, *, category: str | None = None, description: str | None = None, attributes: dict | None = None) -> Product:
-        pass
-
     def add_many(self, products: list[dict]) -> list[Product]:
-        pass
-
-    def get_one(self, id: str) -> Product:
         pass
 
     def get_many(self, ids: list[str]) -> list[Product]:
         pass
 
-    def delete_one(self, id: str) -> InventoryEvent:
-        pass
-
     def delete_many(self, ids: list[str]) -> list[InventoryEvent]:
         pass
 
-    def receive_one(self, id: str, quantity: int, *, attributes: dict | None = None) -> InventoryEvent:
-        pass
-
     def receive_many(self, movements: list[dict]) -> list[InventoryEvent]:
-        pass
-
-    def remove_one(self, id: str, quantity: int, *, attributes: dict | None = None) -> InventoryEvent:
         pass
 
     def remove_many(self, movements: list[dict]) -> list[InventoryEvent]:
